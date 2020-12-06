@@ -10,7 +10,6 @@ import modules.config.config as cnf
 import modules.database.connection as conn
 from sqlalchemy.orm import Session
 
-print()
 print('sqlite:///{}'.format(cnf._DB_PATH_))
 
 engine = conn.connect(cnf._DB_PATH_)
