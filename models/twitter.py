@@ -41,7 +41,7 @@ class BatchQueue(Base):
  
     def __repr__(self):
         return (
-            f"<ConnecticutCity {self.type}, {self.date_added}, " \
+            f"<BatchQueue {self.type}, {self.date_added}, " \
             f"{self.ParentTown}"
         )
  
