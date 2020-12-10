@@ -2,7 +2,7 @@ from json.encoder import JSONEncoder
 import json
 data = []
 
-with open('./data/test_to_ethan.json') as file_object:
+with open('tweets_to_neiltyson.json') as file_object:
   for line in file_object:
       data.append(json.loads(line))
 
@@ -33,6 +33,6 @@ occur_count = dict(occur_count)
 for (occurs, num) in occur_count.items():
   print("{} | {}".format(occurs, num))
 
-outfile = open('active_tweeters_to_influencer.json', 'w')
+outfile = open('active_tweeters_to_neiltyson.json', 'w')
 json.dump(mega_users, outfile)
 outfile.close()
