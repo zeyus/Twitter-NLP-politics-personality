@@ -5,7 +5,7 @@ def append_suffix(filename, suffix):
     name, ext = os.path.splitext(filename)
     return "{name}_{suffix}{ext}".format(name=name, suffix=suffix, ext=ext)
 
-tweet_dirs = ['data/tweets_to_x/', 'data/tweet_w_big5/']
+tweet_dirs = ['data/tweets_to_x/', 'data/tweet_w_big5/', 'data/from_follower_to_influencer/']
 columns = ["conversation_id", "created_at", "date", "time", "timezone", "username", "name", "place", "tweet", "language"]
 
 for tweet_dir in tweet_dirs:
