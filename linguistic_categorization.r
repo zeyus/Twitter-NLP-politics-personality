@@ -3,7 +3,7 @@ library(tidyverse)
 library(quanteda)
 library(readtext)
 library(reshape2)
-library(ggradar)
+# library(ggradar)
 library(ggpubr)
 
 
@@ -41,41 +41,42 @@ liwc_dict <- quanteda::dictionary(
 #   dictionary = liwc_dict,
 #   verbose = TRUE)
 
-### CSV FROM ALEKS
-corpus_tweets <- corpus(
-  readtext("data/follower_tweets/xenopraxis_tweets.csv",
-  text_field = "text"))
+create_LIWC_data_frame <- function(filename, liwc_dict, group_name = "follower", group_by = "username") {
+  #### JSON FROM TWINT
+  # group by tweet language
+  corpus_tweets <- corpus(
+    readtext(filename,
+    text_field = "tweet"))
+
+  if (group_by == "language") {
+    corpus_tweets <- corpus_subset(corpus_tweets, language == "en")
+  }
+  # Create a document-feature matrix to map the LIWC dictionary
+  dfm_tweets <- dfm(
+    corpus_tweets,
+    groups = group_by,
+    dictionary = liwc_dict,
+    verbose = TRUE)
+
+  df_tweets <- convert(t(dfm_tweets), to = "data.frame")
+  names(df_tweets) <- c("LIWC_Cat", "Freq")
 
 
-#### JSON FROM TWINT
-# group by tweet language
-corpus_tweets <- corpus(
-  readtext("data/from_follower_to_influencer/xenopraxis_at_BenShapiro_fixed.json",
-  text_field = "tweet"))
+  df_tweets$z_freq <- effectsize::standardize(df_tweets$Freq)
+  df_tweets$zr_freq <- effectsize::standardize(df_tweets$Freq, robust = TRUE)
+  df_tweets$norm_freq <- effectsize::normalize(df_tweets$Freq)
 
-# Create a document-feature matrix to map the LIWC dictionary
-dfm_tweets <- dfm(
-  corpus_tweets,
-  groups = "username",
-  dictionary = liwc_dict,
-  verbose = TRUE)
-
-df_tweets <- convert(t(dfm_tweets), to = "data.frame")
-names(df_tweets) <- c("LIWC_Cat", "Freq")
+  df_tweets$rel_freq <- with(df_tweets, Freq / sum(Freq))
+  df_tweets$group <- group_name
+  df_tweets
+}
 
 
-df_tweets$z_freq <- effectsize::standardize(df_tweets$Freq)
-df_tweets$zr_freq <- effectsize::standardize(df_tweets$Freq, robust = TRUE)
-df_tweets$norm_freq <- effectsize::normalize(df_tweets$Freq)
-
-df_tweets$rel_freq <- with(df_tweets, Freq / sum(Freq))
 
 
-df_tweets_x <- df_tweets
-df_tweets_x$group <- "follower_to_influencer"
-df_tweets$group <- "follower"
-df_tweets_comb <- rbind(df_tweets, df_tweets_x)
-df_tweets_comb
+df_tweets_1 <- create_LIWC_data_frame("data/tweets_to_x/tweets_to_HilaKleinH3_fixed.json", liwc_dict, "hila", "language")
+df_tweets_2 <- create_LIWC_data_frame("data/tweets_to_x/tweets_to_h3h3productions_fixed.json", liwc_dict, "ethan", "language")
+df_tweets_comb <- rbind(df_tweets_1, df_tweets_2)
 ggdotchart(df_tweets_comb,
   x = "LIWC_Cat",
   y = "norm_freq",
