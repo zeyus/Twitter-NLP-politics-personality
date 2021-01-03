@@ -63,87 +63,105 @@ liwc_dict <- quanteda::dictionary(
   file = "data/LIWC/LIWC2015.Dictionary.English.2020.12.09.96630.dic",
   format = "LIWC")
 
-### Create a corpus
-# In this case, from a json - we can use any and specify content / text field
+process_user <- function(filename) {
+  #### JSON FROM TWINT
+  # group by tweet language
+  corpus_tweets <- corpus(
+    readtext(filename,
+    text_field = "tweet"))
 
-## This would grop the text based on the twitter username
-# corpus_tweets <- corpus(
-#   readtext("data/tweets_to_x/tweets_to_rustyrockets_fixed.json",
-#   textfield = "tweet",
-#   docid_field = "username"))
+  # Create a document-feature matrix to map the LIWC dictionary
+  dfm_tweets <- dfm(
+    corpus_tweets,
+    groups = "username",
+    dictionary = liwc_dict,
+    verbose = TRUE)
 
-# # group by tweet language
-# corpus_tweets <- corpus(
-#   readtext("data/tweets_to_x/tweets_to_SamHarrisOrg_fixed.json",
-#   text_field = "tweet"))
-# # only keep english
-# corpus_tweets <- corpus_subset(corpus_tweets, language == "en")
-# # Create a document-feature matrix to map the LIWC dictionary
-# dfm_tweets <- dfm(
-#   corpus_tweets,
-#   groups = "language",
-#   dictionary = liwc_dict,
-#   verbose = TRUE)
-
-#### CSV FROM ALEKS
-# corpus_tweets <- corpus(
-#   readtext("data/follower_tweets/xenopraxis_tweets.csv",
-#   text_field = "text"))
+  df_tweets <- convert(t(dfm_tweets), to = "data.frame")
+  names(df_tweets) <- c("LIWC_Cat", "Freq")
 
 
-#### JSON FROM TWINT
-# group by tweet language
-corpus_tweets <- corpus(
-  readtext("data/from_follower_to_influencer/xenopraxis_at_BenShapiro_fixed.json",
-  text_field = "tweet"))
-
-# Create a document-feature matrix to map the LIWC dictionary
-dfm_tweets <- dfm(
-  corpus_tweets,
-  groups = "username",
-  dictionary = liwc_dict,
-  verbose = TRUE)
+  humans_freq <- sum(subset(df_tweets, LIWC_Cat %in% c("male", "female"))$Freq)
+  df_tweets <- df_tweets %>%
+    bind_rows(tibble(LIWC_Cat = "humans", Freq = humans_freq))
 
 
+  df_tweets <- df_tweets[!df_tweets$LIWC_Cat %in% removed_cats, ]
+  df_tweets$z_freq <- effectsize::standardize(df_tweets$Freq)
+  df_tweets$zr_freq <- effectsize::standardize(df_tweets$Freq, robust = TRUE)
+  df_tweets$norm_freq <- effectsize::normalize(df_tweets$Freq)
 
-df_tweets <- convert(t(dfm_tweets), to = "data.frame")
-names(df_tweets) <- c("LIWC_Cat", "Freq")
+  df_tweets$rel_freq <- with(df_tweets, Freq / sum(Freq))
+
+  df_tweets <- inner_join(df_tweets, cor_map)
+
+  summary_scores <- sapply(
+    score_types,
+    blah_blah,
+    df = df_tweets,
+    dimensions = dimensions,
+    simplify = "list")
+
+  summary_scores <- as.data.frame(summary_scores, row.names = dimensions)
+
+  summary_scores$dimension <- rownames(summary_scores)
+
+  summary_scores$filename <- basename(filename)
+
+  summary_scores
+
+}
+
+#files <- Sys.glob("data/from_follower_to_influencer/*_at_BenShapiro_fixed.json")
+files <- Sys.glob("data/from_follower_to_influencer/*_at_BenShapiro_fixed.json")
+block_len <- 7
+dflen <- length(files) * block_len
+dim <- character(dflen)
+freq <- numeric(dflen)
+user <- character(dflen)
 
 
-humans_freq <- sum(subset(df_tweets, LIWC_Cat %in% c("male", "female"))$Freq)
-df_tweets <- df_tweets %>%
-  bind_rows(tibble(LIWC_Cat = "humans", Freq = humans_freq))
+count <- 0
+for (f in files) {
+  count <- count + 1
+  fist <- (count - 1) * block_len + 1
+  anus <- count * block_len
+  df <- process_user(f)
 
+  dim[fist:anus] <- df$dimension
+  freq[fist:anus] <- df$z_freq
+  user[fist:anus] <- df$filename
+}
 
-df_tweets <- df_tweets[!df_tweets$LIWC_Cat %in% removed_cats, ]
-df_tweets$z_freq <- effectsize::standardize(df_tweets$Freq)
-df_tweets$zr_freq <- effectsize::standardize(df_tweets$Freq, robust = TRUE)
-df_tweets$norm_freq <- effectsize::normalize(df_tweets$Freq)
+summary_scores <- data.frame(dim, freq, user, stringsAsFactors = FALSE)
 
-df_tweets$rel_freq <- with(df_tweets, Freq/sum(Freq))
-
-df_tweets <- inner_join(df_tweets, cor_map)
-
-summary_scores <- sapply(score_types, blah_blah, df = df_tweets, dimensions = dimensions, simplify = "list")
-
-summary_scores <- as.data.frame(summary_scores, row.names = dimensions)
-
-summary_scores$dimension <- rownames(summary_scores)
-
-summary_scores.molten <- melt( summary_scores, id.vars="dimension", value.name="Freq", variable.name="Method" )
-
-
-summary_scores.molten$dimension <- factor(summary_scores.molten$dimension, levels = dimensions)
-
-summary_scores.molten %>% ggplot(aes(x = dimension, y = Freq, fill = Method)) +
+summary_scores %>% ggplot(aes(x = dim, y = freq, fill = user)) +
   geom_bar(position = "dodge", stat = "identity") +
   theme(text = element_text(size = 20)) +
-  geom_text(aes(label = round(Freq, 3)), vjust = -0.2, position = "dodge")
+  geom_text(aes(label = round(freq, 3)), vjust = -0.2, position = "dodge")
 
-summary_scores.molten %>% ggplot(aes(x = dimension, y = Freq, fill = Method)) +
-  geom_bar(position = "identity", stat = "identity", alpha = .3) +
-  theme(text = element_text(size = 20)) +
-  geom_text(aes(label = round(Freq, 3)), vjust = -0.2)
+
+# summary_scores.molten <- melt(
+#   summary_scores,
+#   id.vars = "dim",
+#   value.name = "freq",
+#   variable.name = "user")
+
+
+# summary_scores.molten$dim <- factor(
+#   summary_scores.molten$dim,
+#   levels = dimensions)
+#   summary_scores.molten
+
+# summary_scores.molten %>% ggplot(aes(x = dim, y = freq, fill = user)) +
+#   geom_bar(position = "dodge", stat = "identity") +
+#   theme(text = element_text(size = 20)) +
+#   geom_text(aes(label = round(freq, 3)), vjust = -0.2, position = "dodge")
+
+# summary_scores.molten %>% ggplot(aes(x = dimension, y = Freq, fill = Method)) +
+#   geom_bar(position = "identity", stat = "identity", alpha = .3) +
+#   theme(text = element_text(size = 20)) +
+#   geom_text(aes(label = round(Freq, 3)), vjust = -0.2)
 
 
 

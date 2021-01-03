@@ -74,11 +74,11 @@ create_LIWC_data_frame <- function(filename, liwc_dict, group_name = "follower",
 
 
 
-df_tweets_1 <- create_LIWC_data_frame("data/tweets_to_x/tweets_to_neiltyson_fixed.json", liwc_dict, "neil degrasse tyson", "language")
-df_tweets_2 <- create_LIWC_data_frame("data/tweets_to_x/tweets_to_BenShapiro_fixed.json", liwc_dict, "ben shapiro", "language")
-df_tweets_3 <- create_LIWC_data_frame("data/tweets_to_x/tweets_to_SamHarrisOrg_fixed.json", liwc_dict, "sam harris", "language")
-df_tweets_4 <- create_LIWC_data_frame("data/tweets_to_x/tweets_to_rustyrockets_fixed.json", liwc_dict, "russel brand", "language")
-df_tweets_comb <- rbind(df_tweets_1, df_tweets_2, df_tweets_3, df_tweets_4)
+df_tweets_1 <- create_LIWC_data_frame("data/follower_tweets/csefp_tweets.csv", liwc_dict, "csefp", "username")
+df_tweets_2 <- create_LIWC_data_frame("data/from_follower_to_influencer/csefp_at_BenShapiro_fixed.json", liwc_dict, "csefp to shapiro", "username")
+# df_tweets_3 <- create_LIWC_data_frame("data/tweets_to_x/tweets_to_SamHarrisOrg_fixed.json", liwc_dict, "sam harris", "language")
+# df_tweets_4 <- create_LIWC_data_frame("data/tweets_to_x/tweets_to_rustyrockets_fixed.json", liwc_dict, "russel brand", "language")
+df_tweets_comb <- rbind(df_tweets_1, df_tweets_2)
 ggdotchart(df_tweets_comb,
   x = "LIWC_Cat",
   y = "norm_freq",

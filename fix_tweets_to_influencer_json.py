@@ -5,7 +5,7 @@ def append_suffix(filename, suffix):
     name, ext = os.path.splitext(filename)
     return "{name}_{suffix}{ext}".format(name=name, suffix=suffix, ext=ext)
 
-tweet_dirs = ['data/tweets_to_x/', 'data/tweet_w_big5/', 'data/from_follower_to_influencer/']
+tweet_dirs = ['data/tweets_to_x/', 'data/all_tweets/']
 columns = ["conversation_id", "created_at", "date", "time", "timezone", "username", "name", "place", "tweet", "language"]
 
 for tweet_dir in tweet_dirs:
@@ -24,7 +24,7 @@ for tweet_dir in tweet_dirs:
     data = []
     tweet_ids = {}
 
-    with open(tweet_dir + f) as file_object:
+    with open(tweet_dir + f, encoding = 'cp850') as file_object:
       for line in file_object:
         row = json.loads(line)
         if row['id'] in tweet_ids:
